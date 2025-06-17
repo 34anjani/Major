@@ -84,10 +84,16 @@ def swarm_encrypt(image, key):
     # PSO to adaptively rearrange pixels
     np.random.seed(key)
     noise = np.random.randint(0, 256, image.shape, dtype=np.uint8)
-    return (image + noise) % 256, noise
+
+    # Convert to int16 to avoid overflow, do addition, then back to uint8
+    encrypted = (image.astype(np.int16) + noise.astype(np.int16)) % 256
+    return encrypted.astype(np.uint8), noise
+
 
 def swarm_decrypt(image, noise):
-    return (image - noise + 256) % 256
+    decrypted = (image.astype(np.int16) - noise.astype(np.int16) + 256) % 256
+    return decrypted.astype(np.uint8)
+
 
 def quantum_diffuse(image):
     h, w, c = image.shape
@@ -143,7 +149,7 @@ with tab1:
         # Quantum-Inspired Diffusion
         encrypted_img = quantum_diffuse(swarm_img).astype(np.uint8)
 
-        st.image(encrypted_img, caption="🔐 Encrypted Image", use_column_width=True)
+        st.image(encrypted_img, caption="🔐 Encrypted Image", use_container_width=True)
 
         # Metrics
         entropy = calculate_entropy(encrypted_img)
@@ -186,7 +192,6 @@ with tab2:
                 reverse_q = reverse_quantum_diffuse(encrypted_np).astype(np.uint8)
                 reverse_swarm = swarm_decrypt(reverse_q, noise).astype(np.uint8)
                 decrypted_img = fractal_decrypt(reverse_swarm, indices).astype(np.uint8)
-                st.image(decrypted_img, caption="✅ Decrypted Image", use_column_width=True)
+                st.image(decrypted_img, caption="✅ Decrypted Image", use_container_width=True)
         except Exception as e:
             st.error(f"❌ Error decrypting: {str(e)}")
-
